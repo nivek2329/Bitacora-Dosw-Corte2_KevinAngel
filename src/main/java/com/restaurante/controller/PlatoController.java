@@ -25,21 +25,12 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-/**
- * Administracion de la carta (lo que ve/gestiona el gerente): crear,
- * editar, eliminar y activar/desactivar platos. El Controller no piensa:
- * recibe, traduce con el Mapper, delega al Service y responde.
- *
- * Para lo que ve el CLIENTE (solo el menu disponible) esta MenuController,
- * que reutiliza este mismo IPlatoService - ver discusion diapositiva 24.
- */
 @RestController
 @RequestMapping("/api/platos")
 @RequiredArgsConstructor
 @Slf4j
 public class PlatoController {
 
-    // El Mapper se inyecta AQUI - no en el Service
     private final IPlatoService platoService;
     private final PlatoMapper platoMapper;
 
@@ -59,9 +50,9 @@ public class PlatoController {
     @PostMapping
     public ResponseEntity<PlatoResponseDTO> crear(@RequestBody @Valid PlatoRequestDTO dto) {
         log.info("POST /api/platos - nombre={}", dto.getNombre());
-        Plato plato = platoMapper.toDomain(dto); // MapperIn: RequestDTO -> dominio
-        Plato creado = platoService.crear(plato); // Service recibe/devuelve dominio
-        return ResponseEntity.status(HttpStatus.CREATED).body(platoMapper.toResponse(creado)); // MapperOut
+        Plato plato = platoMapper.toDomain(dto);
+        Plato creado = platoService.crear(plato);
+        return ResponseEntity.status(HttpStatus.CREATED).body(platoMapper.toResponse(creado));
     }
 
     @PutMapping("/{id}")
@@ -82,6 +73,6 @@ public class PlatoController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminar(@PathVariable Long id) {
         platoService.eliminar(id);
-        return ResponseEntity.noContent().build(); // 204, sin body
+        return ResponseEntity.noContent().build();
     }
 }

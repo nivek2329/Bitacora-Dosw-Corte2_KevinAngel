@@ -16,12 +16,6 @@ import com.restaurante.service.IPlatoService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-/**
- * Lo que ve el CLIENTE: solo la carta disponible para pedir, de solo
- * lectura. Menu no es un dominio nuevo - es la misma entidad Plato con
- * otro proposito (diapositiva 24). Por eso reutiliza IPlatoService en
- * vez de duplicar logica: mismo servicio, distintos endpoints/rutas.
- */
 @RestController
 @RequestMapping("/api/menu")
 @RequiredArgsConstructor

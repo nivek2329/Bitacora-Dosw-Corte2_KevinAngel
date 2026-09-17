@@ -13,11 +13,6 @@ import com.restaurante.service.IPlatoService;
 
 import lombok.extern.slf4j.Slf4j;
 
-/**
- * Implementacion en memoria (sin base de datos todavia): los platos
- * viven en un Map mientras no tengamos persistencia. Todas las
- * consultas se resuelven con Streams sobre esa coleccion.
- */
 @Service
 @Slf4j
 public class PlatoServiceImpl implements IPlatoService {
@@ -58,8 +53,6 @@ public class PlatoServiceImpl implements IPlatoService {
 
     @Override
     public Plato crear(Plato plato) {
-        // TODO: cuando lleguemos al paso de Validaciones, aqui se agrega
-        // validator.validarNombreUnico(plato.getNombre(), platos.values());
         plato.setId(contador.getAndIncrement());
         platos.put(plato.getId(), plato);
         log.info("Plato creado: id={}, nombre={}", plato.getId(), plato.getNombre());
@@ -68,7 +61,7 @@ public class PlatoServiceImpl implements IPlatoService {
 
     @Override
     public Plato actualizar(Long id, Plato nuevosDatos) {
-        Plato existente = obtenerPorId(id); // lanza 404 si no existe
+        Plato existente = obtenerPorId(id);
 
         existente.setNombre(nuevosDatos.getNombre());
         existente.setPrecio(nuevosDatos.getPrecio());
@@ -92,7 +85,7 @@ public class PlatoServiceImpl implements IPlatoService {
 
     @Override
     public void eliminar(Long id) {
-        obtenerPorId(id); // lanza 404 si no existe
+        obtenerPorId(id);
         platos.remove(id);
         log.info("Plato eliminado: id={}", id);
     }

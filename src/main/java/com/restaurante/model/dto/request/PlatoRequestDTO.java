@@ -8,10 +8,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/**
- * Datos de entrada para crear/actualizar un Plato. La disponibilidad la
- * asigna el sistema (todo plato nuevo empieza disponible), no el cliente.
- */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -28,6 +24,5 @@ public class PlatoRequestDTO {
     @NotBlank(message = "La categoria es obligatoria")
     private String categoria;
 
-    // Campo opcional - sin @NotNull
     private String descripcion;
 }

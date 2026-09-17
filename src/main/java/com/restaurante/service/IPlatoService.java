@@ -4,12 +4,6 @@ import java.util.List;
 
 import com.restaurante.model.domain.Plato;
 
-/**
- * Contrato del Service de Plato. Los metodos reciben y devuelven
- * objetos de DOMINIO - nunca DTOs. IPlatoService tambien es lo que
- * inyectaria MenuService/MenuController si necesitara reutilizar esta
- * logica (p. ej. obtenerDisponibles()) sin duplicarla.
- */
 public interface IPlatoService {
 
     List<Plato> obtenerTodos();

@@ -5,10 +5,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/**
- * Datos de salida para un Plato. Solo los campos que el cliente
- * necesita ver - nunca se expone el objeto de dominio directamente.
- */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
