@@ -24,8 +24,8 @@ cliente, Plato = lo que administra el gerente - mismo Service).
 - [x] `model/dto/request/PlatoRequestDTO.java` + `response/PlatoResponseDTO.java` - con Bean Validation
 - [x] `mapper/PlatoMapper.java` - MapStruct (`@Mapper(componentModel="spring")`)
 - [x] `service/IPlatoService.java` + `service/impl/PlatoServiceImpl.java` - en memoria, con Streams
-- [x] `controller/PlatoController.java` (`/api/platos`, CRUD completo - administracion)
-- [x] `controller/MenuController.java` (`/api/menu`, solo lectura - lo que ve el cliente)
+- [x] `controller/PlatoController.java` (`/api/v1/platos`, CRUD completo - administracion)
+- [x] `controller/MenuController.java` (`/api/v1/menu`, solo lectura - lo que ve el cliente)
 - [x] `exception/RecursoNoEncontradoException.java` - minima, para que `obtenerPorId` compile
 
 ## Pendiente (proximas clases, segun las diapositivas)
@@ -34,7 +34,7 @@ cliente, Plato = lo que administra el gerente - mismo Service).
 - [ ] `ErrorResponseDTO` + `GlobalExceptionHandler` completo (`ConflictoException`, `EstadoInvalidoException`, `ReglaDeNegocioException`)
 - [ ] Swagger / OpenAPI (`springdoc-openapi`, `@Operation`, `@ApiResponse`)
 - [ ] `@Slf4j` y logs en el resto de la app / `application.yml` con perfiles
-- [ ] Versionamiento de rutas (`/api/v1/...`)
+- [x] Versionamiento de rutas (`/api/v1/...`)
 - [ ] Pruebas unitarias (Mockito para el Service, sin mocks para el Validator)
 - [ ] Resto de los dominios de Sushi Craft: Mesa, Pedido, ItemPedido, Cuenta, Reserva, RegistroVehiculo
 - [ ] Diagramas actualizados (clases, secuencia) en el repositorio

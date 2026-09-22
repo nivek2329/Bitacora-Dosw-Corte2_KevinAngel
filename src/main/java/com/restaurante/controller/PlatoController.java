@@ -30,7 +30,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @RestController
-@RequestMapping("/api/platos")
+@RequestMapping("/api/v1/platos")
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Platos", description = "CRUD de los platos del menu de Sushi Craft")
@@ -43,7 +43,7 @@ public class PlatoController {
     @Operation(summary = "Listar todos los platos", description = "Devuelve todos los platos registrados, disponibles o no.")
     @ApiResponse(responseCode = "200", description = "Lista de platos obtenida correctamente")
     public ResponseEntity<List<PlatoResponseDTO>> obtenerTodos() {
-        log.info("GET /api/platos");
+        log.info("GET /api/v1/platos");
         List<Plato> platos = platoService.obtenerTodos();
         return ResponseEntity.ok(platoMapper.toResponseList(platos));
     }
@@ -66,7 +66,7 @@ public class PlatoController {
             @ApiResponse(responseCode = "400", description = "Datos invalidos (nombre vacio, precio negativo, etc.)")
     })
     public ResponseEntity<PlatoResponseDTO> crear(@RequestBody @Valid PlatoRequestDTO dto) {
-        log.info("POST /api/platos - nombre={}", dto.getNombre());
+        log.info("POST /api/v1/platos - nombre={}", dto.getNombre());
         Plato plato = platoMapper.toDomain(dto);
         Plato creado = platoService.crear(plato);
         return ResponseEntity.status(HttpStatus.CREATED).body(platoMapper.toResponse(creado));

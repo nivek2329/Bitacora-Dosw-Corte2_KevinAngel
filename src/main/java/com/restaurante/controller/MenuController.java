@@ -20,7 +20,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @RestController
-@RequestMapping("/api/menu")
+@RequestMapping("/api/v1/menu")
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Menu", description = "Vista publica del menu: solo platos disponibles")
@@ -33,7 +33,7 @@ public class MenuController {
     @Operation(summary = "Ver el menu", description = "Lista solo los platos que estan disponibles ahora mismo.")
     @ApiResponse(responseCode = "200", description = "Menu obtenido correctamente")
     public ResponseEntity<List<PlatoResponseDTO>> verMenu() {
-        log.info("GET /api/menu");
+        log.info("GET /api/v1/menu");
         List<Plato> disponibles = platoService.obtenerDisponibles();
         return ResponseEntity.ok(platoMapper.toResponseList(disponibles));
     }
