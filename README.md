@@ -1,25 +1,108 @@
 # Bitacora DOSW - Corte 2 - Sushi Craft
 
-API REST del restaurante **Sushi Craft** (app *Kaze & Nori*), construida
-siguiendo la Guia Turtwig (arquitectura por capas: Dominio -> DTO ->
-Mapper -> Service -> Controller) y las diapositivas de la Semana 8 de
-DOSW 1.
+**Autor:** Kevin Angel _(ajusta tu nombre completo tal como debe aparecer en la entrega)_
 
-**Estado actual: sin persistencia.** Los Services guardan todo en
-memoria (`Map`/`AtomicLong`) mientras no se agregue base de datos - asi
-lo pide explicitamente la clase.
+## Descripcion
+
+API REST del restaurante **Sushi Craft** (app *Kaze & Nori*), el concepto de
+restaurante escogido en el LAB03 de corte 1. Construida siguiendo la Guia
+Turtwig (arquitectura por capas: Dominio -> DTO -> Mapper -> Service ->
+Controller) y las diapositivas de la Semana 8 de DOSW 1.
+
+**Estado actual: sin persistencia.** Los Services guardan todo en memoria
+(`Map`/`AtomicLong`) mientras no se agregue base de datos - asi lo pide
+explicitamente la clase.
+
+## Funcionalidades
+
+La API agrupa las funcionalidades en dos vistas sobre el mismo dominio de
+platos (ver diapositiva 24 del deck: Menu = lo que ve el cliente, Platos =
+lo que administra el gerente):
+
+- **Administracion de platos** (`/api/v1/platos`): CRUD completo para que
+  el gerente cree, edite, consulte, active/desactive disponibilidad y
+  elimine platos del menu.
+- **Menu publico** (`/api/v1/menu`): vista de solo lectura para el
+  cliente, que solo muestra los platos disponibles en este momento, con
+  filtro opcional por categoria (Roll, Nigiri, Sashimi, Temaki, Entrada,
+  Bebida).
+- **Manejo de errores uniforme**: cualquier endpoint responde con el mismo
+  formato de error (`ErrorResponseDTO`) ante recurso no encontrado,
+  datos invalidos o body malformado.
+
+## Tabla de endpoints
+
+| Metodo | Ruta | Descripcion | Respuestas |
+|---|---|---|---|
+| GET | `/api/v1/platos` | Listar todos los platos (disponibles o no) | 200 |
+| GET | `/api/v1/platos/{id}` | Obtener un plato por id | 200, 404 |
+| POST | `/api/v1/platos` | Crear un plato nuevo (queda disponible por defecto) | 201, 400 |
+| PUT | `/api/v1/platos/{id}` | Actualizar un plato existente | 200, 404, 400 |
+| PATCH | `/api/v1/platos/{id}/disponible?disponible={true\|false}` | Cambiar la disponibilidad de un plato | 200, 404 |
+| DELETE | `/api/v1/platos/{id}` | Eliminar un plato | 204, 404 |
+| GET | `/api/v1/menu` | Ver el menu publico (solo platos disponibles) | 200 |
+| GET | `/api/v1/menu/categoria/{categoria}` | Ver el menu filtrado por categoria | 200 |
 
 ## Como se ejecuta
+
 ```
 mvn spring-boot:run
 ```
 - API: http://localhost:8080/api/v1/...
 - Swagger UI: http://localhost:8080/swagger-ui/index.html
 
-## Pruebas
+## Pruebas y cobertura
+
 ```
 mvn test
 ```
+Corre las 11 pruebas unitarias de `PlatoServiceImplTest` y genera el
+reporte de cobertura de Jacoco en `target/site/jacoco/index.html`
+(abrelo en el navegador despues de correr `mvn test`).
+
+## Analisis estatico (SonarCloud)
+
+En `pom.xml`, reemplaza `sonar.projectKey` y `sonar.organization` por los
+valores reales de tu proyecto en SonarCloud, luego corre:
+
+```
+mvn verify sonar:sonar -Dsonar.token=TU_TOKEN
+```
+
+(o exporta `SONAR_TOKEN` como variable de entorno en vez de pasarlo por
+linea de comandos). El reporte queda visible en el dashboard de
+SonarCloud del proyecto.
+
+## Evidencias
+
+> Pega aqui las capturas de pantalla antes de entregar. Guardalas en una
+> carpeta `docs/evidencias/` y enlazalas con `![descripcion](docs/evidencias/archivo.png)`.
+
+### Swagger UI
+
+_(captura de `http://localhost:8080/swagger-ui/index.html` mostrando los
+endpoints documentados de Platos y Menu)_
+
+### Cobertura de pruebas (Jacoco)
+
+_(captura de `target/site/jacoco/index.html` mostrando el porcentaje de
+cobertura de `PlatoServiceImpl`)_
+
+### Analisis estatico (SonarCloud)
+
+_(captura del dashboard de SonarCloud del proyecto despues de correr
+`mvn verify sonar:sonar`)_
+
+### Ejecucion
+
+_(captura de la consola con `mvn spring-boot:run` levantando la app
+correctamente, mostrando el puerto 8080)_
+
+### Pruebas por funcionalidad (Postman)
+
+_(capturas de Postman probando cada endpoint de la tabla de arriba: al
+menos un caso exitoso y un caso de error por funcionalidad, por ejemplo
+GET /api/v1/platos/9999 -> 404, POST /api/v1/platos con body vacio -> 400)_
 
 ## Avance (hasta diapositiva 87 del deck de la S08)
 
@@ -42,15 +125,18 @@ que administra el gerente - mismo Service).
 - [x] Versionamiento de rutas (`/api/v1/...`)
 - [x] Pruebas unitarias del Service con JUnit 5 (`PlatoServiceImplTest`, 11 casos: happy path, recurso no encontrado, lista vacia, filtros)
 - [x] Diagrama de secuencia de "Crear un Plato" (happy path + error) - [`docs/diagramas/secuencia-crear-plato.md`](docs/diagramas/secuencia-crear-plato.md)
+- [x] Jacoco (`jacoco-maven-plugin`, reporte con `mvn test` en `target/site/jacoco/index.html`)
+- [x] Sonar (`sonar-maven-plugin` en `pom.xml`, falta reemplazar `projectKey`/`organization` con los del proyecto real en SonarCloud)
 
 ## Pendiente
 
+- [ ] Reemplazar `sonar.projectKey`/`sonar.organization` en `pom.xml` con los valores reales y correr `mvn verify sonar:sonar` para tener evidencia
+- [ ] Pegar las capturas de evidencia (Swagger, Jacoco, Sonar, ejecucion, pruebas por funcionalidad) en `docs/evidencias/` y enlazarlas en este README
 - [ ] Validaciones de negocio con `IPlatoValidator` (nombre unico, etc.) - opcional segun el deck
 - [ ] `application.yml` con perfiles por ambiente (no es obligatorio: la config actual es simple)
 - [ ] Pruebas del Controller con `@Mock`/`@InjectMocks` (mockeando `IPlatoService` y `PlatoMapper`)
 - [ ] Resto de los dominios de Sushi Craft con capa completa: Mesa, Pedido, ItemPedido, Cuenta, Reserva, RegistroVehiculo (por ahora solo tienen el dominio)
 - [ ] Diagrama de clases actualizado con los cambios de hoy
-- [ ] Jacoco (cobertura) y Sonar (analisis estatico) - no estan en el deck de la S08, pendientes del rubric general del corte
 
 ## Estructura
 ```
@@ -72,4 +158,6 @@ src/test/java/com/restaurante/
   service/impl/PlatoServiceImplTest.java
 docs/diagramas/
   secuencia-crear-plato.md
+docs/evidencias/
+  (capturas de Swagger, Jacoco, Sonar, ejecucion y pruebas por funcionalidad)
 ```
