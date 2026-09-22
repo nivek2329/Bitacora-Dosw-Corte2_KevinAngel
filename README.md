@@ -30,6 +30,12 @@ lo que administra el gerente):
   formato de error (`ErrorResponseDTO`) ante recurso no encontrado,
   datos invalidos o body malformado.
 
+## Diagrama de clases
+
+Dominio de Sushi Craft (7 clases + 3 enums) y sus relaciones:
+- Archivo editable (abrir en [draw.io](https://app.diagrams.net) / diagrams.net): [`docs/diagramas/diagrama-clases-sushicraft.drawio`](docs/diagramas/diagrama-clases-sushicraft.drawio)
+- Explicacion de las relaciones y respuesta a la diapositiva 9: [`docs/diagramas/diagrama-clases.md`](docs/diagramas/diagrama-clases.md)
+
 ## Tabla de endpoints
 
 | Metodo | Ruta | Descripcion | Respuestas |
@@ -133,3 +139,4 @@ errores 404 al usar un id que ya no existe):
 ![PATCH con id inexistente - 404](docs/evidencias/postman-patch-404.png)
 
 ![DELETE exitoso](docs/evidencias/postman-delete-exito.png)
+.
