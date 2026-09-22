@@ -1,6 +1,6 @@
 # Bitacora DOSW - Corte 2 - Sushi Craft
 
-**Autor:** Kevin Angel _(ajusta tu nombre completo tal como debe aparecer en la entrega)_
+**Autor:** Kevin Angel
 
 ## Descripcion
 
