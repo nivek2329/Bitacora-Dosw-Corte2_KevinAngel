@@ -107,9 +107,32 @@ llega al 98% de cobertura de instrucciones.
 
 ### Pruebas por funcionalidad (Postman)
 
-_(capturas de Postman probando cada endpoint de la tabla de arriba: al
-menos un caso exitoso y un caso de error por funcionalidad, por ejemplo
-GET /api/v1/platos/9999 -> 404, POST /api/v1/platos con body vacio -> 400)_
+Se probaron los 8 endpoints de la tabla, cada uno con al menos un caso
+exitoso y un caso de error:
+
+| Endpoint | Caso exitoso | Caso de error |
+|---|---|---|
+| GET `/platos` | 200, lista completa | - |
+| GET `/platos/{id}` | 200, plato encontrado | 404, id inexistente |
+| POST `/platos` | 201, plato creado | 400, body invalido/vacio |
+| PUT `/platos/{id}` | 200, plato actualizado | 404, id inexistente |
+| PATCH `/platos/{id}/disponible` | 200, disponibilidad cambiada | 404, id inexistente |
+| DELETE `/platos/{id}` | 204, plato eliminado | 404, id inexistente |
+| GET `/menu` | 200, solo platos disponibles | - |
+| GET `/menu/categoria/{categoria}` | 200, filtrado por categoria | - |
+
+Capturas representativas (creacion, actualizacion, eliminacion y los
+errores 404 al usar un id que ya no existe):
+
+![POST exitoso](docs/evidencias/postman-post-exito.png)
+
+![PUT exitoso](docs/evidencias/postman-put-exito.png)
+
+![GET con id inexistente - 404](docs/evidencias/postman-get-404.png)
+
+![PATCH con id inexistente - 404](docs/evidencias/postman-patch-404.png)
+
+![DELETE exitoso](docs/evidencias/postman-delete-exito.png)
 
 ## Avance (hasta diapositiva 87 del deck de la S08)
 
@@ -134,10 +157,10 @@ que administra el gerente - mismo Service).
 - [x] Diagrama de secuencia de "Crear un Plato" (happy path + error) - [`docs/diagramas/secuencia-crear-plato.md`](docs/diagramas/secuencia-crear-plato.md)
 - [x] Jacoco (`jacoco-maven-plugin`, reporte con `mvn test` en `target/site/jacoco/index.html`)
 - [x] Sonar (`sonar-maven-plugin` en `pom.xml`, analisis corrido contra SonarQube local: 0 issues de Security, 3 de Reliability, 8 de Maintainability, todos severidad baja, 0% duplicaciones)
+- [x] Pruebas por funcionalidad con Postman de los 8 endpoints (caso exitoso + caso de error cada uno) - capturas en `docs/evidencias/`
 
 ## Pendiente
 
-- [ ] Pegar las capturas de Postman (pruebas por funcionalidad) en `docs/evidencias/` y enlazarlas en este README
 - [ ] Validaciones de negocio con `IPlatoValidator` (nombre unico, etc.) - opcional segun el deck
 - [ ] `application.yml` con perfiles por ambiente (no es obligatorio: la config actual es simple)
 - [ ] Pruebas del Controller con `@Mock`/`@InjectMocks` (mockeando `IPlatoService` y `PlatoMapper`)
