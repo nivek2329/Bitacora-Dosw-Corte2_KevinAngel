@@ -5,6 +5,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -58,6 +59,13 @@ public class GlobalExceptionHandler {
                 .collect(Collectors.joining(", "));
         log.warn("Validacion de input fallida: {}", mensaje);
         return construirRespuesta(HttpStatus.BAD_REQUEST, mensaje, request);
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorResponseDTO> manejarBodyInvalido(HttpMessageNotReadableException ex,
+                                                                  HttpServletRequest request) {
+        log.warn("Body invalido o vacio en la peticion: {}", request.getRequestURI());
+        return construirRespuesta(HttpStatus.BAD_REQUEST, "El cuerpo de la peticion es invalido o esta vacio", request);
     }
 
     @ExceptionHandler(Exception.class)
