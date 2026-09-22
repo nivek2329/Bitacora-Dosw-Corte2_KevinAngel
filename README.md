@@ -60,18 +60,25 @@ Corre las 11 pruebas unitarias de `PlatoServiceImplTest` y genera el
 reporte de cobertura de Jacoco en `target/site/jacoco/index.html`
 (abrelo en el navegador despues de correr `mvn test`).
 
-## Analisis estatico (SonarCloud)
+## Analisis estatico (SonarQube local)
 
-En `pom.xml`, reemplaza `sonar.projectKey` y `sonar.organization` por los
-valores reales de tu proyecto en SonarCloud, luego corre:
+SonarQube corre localmente en Docker (contenedor `sonarqube`, puerto 9000).
+
+1. En Docker Desktop, inicia el contenedor `sonarqube` (boton Play) y
+   espera ~1 minuto a que levante.
+2. Abre http://localhost:9000 (usuario/clave que ya tengas configurados).
+3. Crea el proyecto (o usa uno existente) y copia su **Project Key**.
+4. En **My Account > Security**, genera un **token**.
+5. En `pom.xml`, reemplaza `sonar.projectKey` por la key del paso 3.
+6. Corre:
 
 ```
 mvn verify sonar:sonar -Dsonar.token=TU_TOKEN
 ```
 
 (o exporta `SONAR_TOKEN` como variable de entorno en vez de pasarlo por
-linea de comandos). El reporte queda visible en el dashboard de
-SonarCloud del proyecto.
+linea de comandos). El reporte queda visible en http://localhost:9000
+dentro del proyecto.
 
 ## Evidencias
 
@@ -80,23 +87,23 @@ SonarCloud del proyecto.
 
 ### Swagger UI
 
-_(captura de `http://localhost:8080/swagger-ui/index.html` mostrando los
-endpoints documentados de Platos y Menu)_
+![Swagger UI](docs/evidencias/swagger-ui.png)
 
 ### Cobertura de pruebas (Jacoco)
 
-_(captura de `target/site/jacoco/index.html` mostrando el porcentaje de
-cobertura de `PlatoServiceImpl`)_
+![Cobertura Jacoco](docs/evidencias/jacoco-cobertura.png)
 
-### Analisis estatico (SonarCloud)
+Cobertura total del proyecto: 23% (559/734 instrucciones). El paquete
+`service.impl` (que es el que tiene pruebas unitarias, `PlatoServiceImpl`)
+llega al 98% de cobertura de instrucciones.
 
-_(captura del dashboard de SonarCloud del proyecto despues de correr
-`mvn verify sonar:sonar`)_
+### Analisis estatico (SonarQube local)
+
+![SonarQube Overview](docs/evidencias/sonar-overview.png)
 
 ### Ejecucion
 
-_(captura de la consola con `mvn spring-boot:run` levantando la app
-correctamente, mostrando el puerto 8080)_
+![Ejecucion de la app](docs/evidencias/ejecucion-consola.png)
 
 ### Pruebas por funcionalidad (Postman)
 
@@ -126,12 +133,11 @@ que administra el gerente - mismo Service).
 - [x] Pruebas unitarias del Service con JUnit 5 (`PlatoServiceImplTest`, 11 casos: happy path, recurso no encontrado, lista vacia, filtros)
 - [x] Diagrama de secuencia de "Crear un Plato" (happy path + error) - [`docs/diagramas/secuencia-crear-plato.md`](docs/diagramas/secuencia-crear-plato.md)
 - [x] Jacoco (`jacoco-maven-plugin`, reporte con `mvn test` en `target/site/jacoco/index.html`)
-- [x] Sonar (`sonar-maven-plugin` en `pom.xml`, falta reemplazar `projectKey`/`organization` con los del proyecto real en SonarCloud)
+- [x] Sonar (`sonar-maven-plugin` en `pom.xml`, analisis corrido contra SonarQube local: 0 issues de Security, 3 de Reliability, 8 de Maintainability, todos severidad baja, 0% duplicaciones)
 
 ## Pendiente
 
-- [ ] Reemplazar `sonar.projectKey`/`sonar.organization` en `pom.xml` con los valores reales y correr `mvn verify sonar:sonar` para tener evidencia
-- [ ] Pegar las capturas de evidencia (Swagger, Jacoco, Sonar, ejecucion, pruebas por funcionalidad) en `docs/evidencias/` y enlazarlas en este README
+- [ ] Pegar las capturas de Postman (pruebas por funcionalidad) en `docs/evidencias/` y enlazarlas en este README
 - [ ] Validaciones de negocio con `IPlatoValidator` (nombre unico, etc.) - opcional segun el deck
 - [ ] `application.yml` con perfiles por ambiente (no es obligatorio: la config actual es simple)
 - [ ] Pruebas del Controller con `@Mock`/`@InjectMocks` (mockeando `IPlatoService` y `PlatoMapper`)
