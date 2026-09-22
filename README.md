@@ -56,7 +56,7 @@ mvn spring-boot:run
 ```
 mvn test
 ```
-Corre las 11 pruebas unitarias de `PlatoServiceImplTest` y genera el
+Corre las 14 pruebas unitarias (11 de `PlatoServiceImplTest` + 3 de `PlatoMapperTest`) y genera el
 reporte de cobertura de Jacoco en `target/site/jacoco/index.html`
 (abrelo en el navegador despues de correr `mvn test`).
 
