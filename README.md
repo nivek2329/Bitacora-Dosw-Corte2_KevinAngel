@@ -243,8 +243,6 @@ dentro del proyecto.
 
 ## Evidencias
 
-> Pega aqui las capturas de pantalla antes de entregar. Guardalas en una
-> carpeta `docs/evidencias/` y enlazalas con `![descripcion](docs/evidencias/archivo.png)`.
 
 ### Swagger UI
 
