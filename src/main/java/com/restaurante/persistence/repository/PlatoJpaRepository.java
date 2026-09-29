@@ -8,9 +8,9 @@ import com.restaurante.persistence.entity.PlatoEntity;
 
 public interface PlatoJpaRepository extends JpaRepository<PlatoEntity, Long> {
 
-    List<PlatoEntity> findByCategoria(String categoria);
+    List<PlatoEntity> findByCategoriaIgnoreCase(String categoria);
     List<PlatoEntity> findByDisponible(Boolean disponible);
-    boolean existsByNombre(String nombre);
-    boolean existsByNombreAndIdNot(String nombre, Long id);
+    boolean existsByNombreIgnoreCase(String nombre);
+    boolean existsByNombreIgnoreCaseAndIdNot(String nombre, Long id);
 
 }

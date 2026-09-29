@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -22,7 +23,6 @@ import com.restaurante.service.ICuentaService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -41,6 +41,7 @@ public class CuentaController {
     @GetMapping
     @Operation(summary = "Listar todas las cuentas", description = "Se puede filtrar por mesa con ?idMesa=")
     @ApiResponse(responseCode = "200", description = "Lista de cuentas obtenida correctamente")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<CuentaResponseDTO>> obtenerTodas(@RequestParam(required = false) Long idMesa) {
         log.info("GET /api/v1/cuentas - idMesa={}", idMesa);
         List<Cuenta> cuentas = idMesa == null ? cuentaService.obtenerTodos() : cuentaService.obtenerPorMesa(idMesa);
@@ -49,10 +50,9 @@ public class CuentaController {
 
     @GetMapping("/{id}")
     @Operation(summary = "Obtener una cuenta por id")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Cuenta encontrada"),
-            @ApiResponse(responseCode = "404", description = "No existe una cuenta con ese id")
-    })
+    @ApiResponse(responseCode = "200", description = "Cuenta encontrada")
+    @ApiResponse(responseCode = "404", description = "No existe una cuenta con ese id")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<CuentaResponseDTO> obtenerPorId(@PathVariable Long id) {
         Cuenta cuenta = cuentaService.obtenerPorId(id);
         return ResponseEntity.ok(cuentaMapper.toResponse(cuenta));
@@ -60,10 +60,9 @@ public class CuentaController {
 
     @PostMapping
     @Operation(summary = "Abrir una cuenta nueva", description = "La cuenta se crea ABIERTA y en 0 por defecto.")
-    @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "Cuenta creada"),
-            @ApiResponse(responseCode = "400", description = "Datos invalidos")
-    })
+    @ApiResponse(responseCode = "201", description = "Cuenta creada")
+    @ApiResponse(responseCode = "400", description = "Datos invalidos")
+    @PreAuthorize("hasAnyRole('GERENTE', 'MESERO')")
     public ResponseEntity<CuentaResponseDTO> crear(@RequestBody @Valid CuentaRequestDTO dto) {
         log.info("POST /api/v1/cuentas - idMesa={}", dto.getIdMesa());
         Cuenta cuenta = cuentaMapper.toDomain(dto);
@@ -73,10 +72,9 @@ public class CuentaController {
 
     @PatchMapping("/{id}/total")
     @Operation(summary = "Actualizar el total acumulado de una cuenta")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Total actualizado"),
-            @ApiResponse(responseCode = "404", description = "No existe una cuenta con ese id")
-    })
+    @ApiResponse(responseCode = "200", description = "Total actualizado")
+    @ApiResponse(responseCode = "404", description = "No existe una cuenta con ese id")
+    @PreAuthorize("hasAnyRole('GERENTE', 'MESERO')")
     public ResponseEntity<CuentaResponseDTO> actualizarTotal(@PathVariable Long id, @RequestParam Double total) {
         Cuenta actualizada = cuentaService.actualizarTotal(id, total);
         return ResponseEntity.ok(cuentaMapper.toResponse(actualizada));
@@ -84,10 +82,9 @@ public class CuentaController {
 
     @PatchMapping("/{id}/cerrar")
     @Operation(summary = "Cerrar una cuenta")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Cuenta cerrada"),
-            @ApiResponse(responseCode = "404", description = "No existe una cuenta con ese id")
-    })
+    @ApiResponse(responseCode = "200", description = "Cuenta cerrada")
+    @ApiResponse(responseCode = "404", description = "No existe una cuenta con ese id")
+    @PreAuthorize("hasAnyRole('GERENTE', 'MESERO')")
     public ResponseEntity<CuentaResponseDTO> cerrar(@PathVariable Long id) {
         Cuenta actualizada = cuentaService.cerrar(id);
         return ResponseEntity.ok(cuentaMapper.toResponse(actualizada));
@@ -95,10 +92,9 @@ public class CuentaController {
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Eliminar una cuenta")
-    @ApiResponses({
-            @ApiResponse(responseCode = "204", description = "Cuenta eliminada"),
-            @ApiResponse(responseCode = "404", description = "No existe una cuenta con ese id")
-    })
+    @ApiResponse(responseCode = "204", description = "Cuenta eliminada")
+    @ApiResponse(responseCode = "404", description = "No existe una cuenta con ese id")
+    @PreAuthorize("hasRole('GERENTE')")
     public ResponseEntity<Void> eliminar(@PathVariable Long id) {
         cuentaService.eliminar(id);
         return ResponseEntity.noContent().build();

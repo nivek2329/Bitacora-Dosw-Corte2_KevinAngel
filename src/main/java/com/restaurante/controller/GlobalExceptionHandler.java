@@ -1,11 +1,14 @@
 package com.restaurante.controller;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -68,6 +71,19 @@ public class GlobalExceptionHandler {
         return construirRespuesta(HttpStatus.BAD_REQUEST, "El cuerpo de la peticion es invalido o esta vacio", request);
     }
 
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ErrorResponseDTO> manejarAccesoDenegado(AccessDeniedException ex, HttpServletRequest request) {
+        log.warn("Acceso denegado: {} {}", request.getRequestURI(), ex.getMessage());
+        return construirRespuesta(HttpStatus.FORBIDDEN, "No tienes permiso para esta accion", request);
+    }
+
+    @ExceptionHandler(BadCredentialsException.class)
+    public ResponseEntity<ErrorResponseDTO> manejarCredencialesInvalidas(BadCredentialsException ex,
+                                                                           HttpServletRequest request) {
+        log.warn("Login fallido: {}", request.getRequestURI());
+        return construirRespuesta(HttpStatus.UNAUTHORIZED, "Email o contrasena incorrectos", request);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponseDTO> manejarErrorGeneral(Exception ex, HttpServletRequest request) {
         log.error("Error inesperado", ex);
@@ -77,7 +93,7 @@ public class GlobalExceptionHandler {
     private ResponseEntity<ErrorResponseDTO> construirRespuesta(HttpStatus status, String mensaje,
                                                                   HttpServletRequest request) {
         ErrorResponseDTO body = ErrorResponseDTO.builder()
-                .timestamp(LocalDateTime.now())
+                .timestamp(LocalDateTime.now(ZoneId.of("America/Bogota")))
                 .status(status.value())
                 .error(status.getReasonPhrase())
                 .message(mensaje)

@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -24,7 +25,6 @@ import com.restaurante.service.IPedidoService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -43,6 +43,7 @@ public class PedidoController {
     @GetMapping
     @Operation(summary = "Listar todos los pedidos", description = "Se puede filtrar por mesa con ?idMesa=")
     @ApiResponse(responseCode = "200", description = "Lista de pedidos obtenida correctamente")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<PedidoResponseDTO>> obtenerTodos(@RequestParam(required = false) Long idMesa) {
         log.info("GET /api/v1/pedidos - idMesa={}", idMesa);
         List<Pedido> pedidos = idMesa == null ? pedidoService.obtenerTodos() : pedidoService.obtenerPorMesa(idMesa);
@@ -51,10 +52,9 @@ public class PedidoController {
 
     @GetMapping("/{id}")
     @Operation(summary = "Obtener un pedido por id")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Pedido encontrado"),
-            @ApiResponse(responseCode = "404", description = "No existe un pedido con ese id")
-    })
+    @ApiResponse(responseCode = "200", description = "Pedido encontrado")
+    @ApiResponse(responseCode = "404", description = "No existe un pedido con ese id")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<PedidoResponseDTO> obtenerPorId(@PathVariable Long id) {
         Pedido pedido = pedidoService.obtenerPorId(id);
         return ResponseEntity.ok(pedidoMapper.toResponse(pedido));
@@ -62,10 +62,9 @@ public class PedidoController {
 
     @PostMapping
     @Operation(summary = "Crear un pedido nuevo", description = "El pedido queda con estado RECIBIDO y sin items.")
-    @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "Pedido creado"),
-            @ApiResponse(responseCode = "400", description = "Datos invalidos")
-    })
+    @ApiResponse(responseCode = "201", description = "Pedido creado")
+    @ApiResponse(responseCode = "400", description = "Datos invalidos")
+    @PreAuthorize("hasAnyRole('GERENTE', 'MESERO')")
     public ResponseEntity<PedidoResponseDTO> crear(@RequestBody @Valid PedidoRequestDTO dto) {
         log.info("POST /api/v1/pedidos - idMesa={}", dto.getIdMesa());
         Pedido pedido = pedidoMapper.toDomain(dto);
@@ -75,11 +74,10 @@ public class PedidoController {
 
     @PutMapping("/{id}")
     @Operation(summary = "Actualizar un pedido existente")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Pedido actualizado"),
-            @ApiResponse(responseCode = "404", description = "No existe un pedido con ese id"),
-            @ApiResponse(responseCode = "400", description = "Datos invalidos")
-    })
+    @ApiResponse(responseCode = "200", description = "Pedido actualizado")
+    @ApiResponse(responseCode = "404", description = "No existe un pedido con ese id")
+    @ApiResponse(responseCode = "400", description = "Datos invalidos")
+    @PreAuthorize("hasAnyRole('GERENTE', 'MESERO')")
     public ResponseEntity<PedidoResponseDTO> actualizar(@PathVariable Long id, @RequestBody @Valid PedidoRequestDTO dto) {
         Pedido nuevosDatos = pedidoMapper.toDomain(dto);
         Pedido actualizado = pedidoService.actualizar(id, nuevosDatos);
@@ -88,10 +86,9 @@ public class PedidoController {
 
     @PatchMapping("/{id}/estado")
     @Operation(summary = "Cambiar el estado de un pedido", description = "RECIBIDO, EN_PREPARACION, LISTO, ENTREGADO o CANCELADO.")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Estado actualizado"),
-            @ApiResponse(responseCode = "404", description = "No existe un pedido con ese id")
-    })
+    @ApiResponse(responseCode = "200", description = "Estado actualizado")
+    @ApiResponse(responseCode = "404", description = "No existe un pedido con ese id")
+    @PreAuthorize("hasAnyRole('GERENTE', 'MESERO', 'COCINERO')")
     public ResponseEntity<PedidoResponseDTO> cambiarEstado(@PathVariable Long id, @RequestParam EstadoPedido estado) {
         Pedido actualizado = pedidoService.cambiarEstado(id, estado);
         return ResponseEntity.ok(pedidoMapper.toResponse(actualizado));
@@ -99,10 +96,9 @@ public class PedidoController {
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Eliminar un pedido")
-    @ApiResponses({
-            @ApiResponse(responseCode = "204", description = "Pedido eliminado"),
-            @ApiResponse(responseCode = "404", description = "No existe un pedido con ese id")
-    })
+    @ApiResponse(responseCode = "204", description = "Pedido eliminado")
+    @ApiResponse(responseCode = "404", description = "No existe un pedido con ese id")
+    @PreAuthorize("hasRole('GERENTE')")
     public ResponseEntity<Void> eliminar(@PathVariable Long id) {
         pedidoService.eliminar(id);
         return ResponseEntity.noContent().build();

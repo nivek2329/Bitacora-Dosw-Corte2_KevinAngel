@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -22,7 +23,6 @@ import com.restaurante.service.IRegistroVehiculoService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -41,6 +41,7 @@ public class RegistroVehiculoController {
     @GetMapping
     @Operation(summary = "Listar todos los registros", description = "Se puede filtrar solo los activos con ?activos=true")
     @ApiResponse(responseCode = "200", description = "Lista de registros obtenida correctamente")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<RegistroVehiculoResponseDTO>> obtenerTodos(
             @RequestParam(required = false, defaultValue = "false") boolean activos) {
         log.info("GET /api/v1/vehiculos - activos={}", activos);
@@ -50,10 +51,9 @@ public class RegistroVehiculoController {
 
     @GetMapping("/{id}")
     @Operation(summary = "Obtener un registro por id")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Registro encontrado"),
-            @ApiResponse(responseCode = "404", description = "No existe un registro con ese id")
-    })
+    @ApiResponse(responseCode = "200", description = "Registro encontrado")
+    @ApiResponse(responseCode = "404", description = "No existe un registro con ese id")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<RegistroVehiculoResponseDTO> obtenerPorId(@PathVariable Long id) {
         RegistroVehiculo registro = registroService.obtenerPorId(id);
         return ResponseEntity.ok(registroMapper.toResponse(registro));
@@ -61,10 +61,9 @@ public class RegistroVehiculoController {
 
     @PostMapping
     @Operation(summary = "Registrar el ingreso de un vehiculo", description = "La hora de entrada se asigna automaticamente.")
-    @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "Registro creado"),
-            @ApiResponse(responseCode = "400", description = "Datos invalidos")
-    })
+    @ApiResponse(responseCode = "201", description = "Registro creado")
+    @ApiResponse(responseCode = "400", description = "Datos invalidos")
+    @PreAuthorize("hasAnyRole('GERENTE', 'MESERO')")
     public ResponseEntity<RegistroVehiculoResponseDTO> crear(@RequestBody @Valid RegistroVehiculoRequestDTO dto) {
         log.info("POST /api/v1/vehiculos - placa={}", dto.getPlaca());
         RegistroVehiculo registro = registroMapper.toDomain(dto);
@@ -74,10 +73,9 @@ public class RegistroVehiculoController {
 
     @PatchMapping("/{id}/salida")
     @Operation(summary = "Registrar la salida de un vehiculo")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Salida registrada"),
-            @ApiResponse(responseCode = "404", description = "No existe un registro con ese id")
-    })
+    @ApiResponse(responseCode = "200", description = "Salida registrada")
+    @ApiResponse(responseCode = "404", description = "No existe un registro con ese id")
+    @PreAuthorize("hasAnyRole('GERENTE', 'MESERO')")
     public ResponseEntity<RegistroVehiculoResponseDTO> registrarSalida(@PathVariable Long id) {
         RegistroVehiculo actualizado = registroService.registrarSalida(id);
         return ResponseEntity.ok(registroMapper.toResponse(actualizado));
@@ -85,10 +83,9 @@ public class RegistroVehiculoController {
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Eliminar un registro de vehiculo")
-    @ApiResponses({
-            @ApiResponse(responseCode = "204", description = "Registro eliminado"),
-            @ApiResponse(responseCode = "404", description = "No existe un registro con ese id")
-    })
+    @ApiResponse(responseCode = "204", description = "Registro eliminado")
+    @ApiResponse(responseCode = "404", description = "No existe un registro con ese id")
+    @PreAuthorize("hasRole('GERENTE')")
     public ResponseEntity<Void> eliminar(@PathVariable Long id) {
         registroService.eliminar(id);
         return ResponseEntity.noContent().build();

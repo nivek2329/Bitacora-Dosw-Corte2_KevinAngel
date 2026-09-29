@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -24,7 +25,6 @@ import com.restaurante.service.IMesaService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -43,6 +43,7 @@ public class MesaController {
     @GetMapping
     @Operation(summary = "Listar todas las mesas")
     @ApiResponse(responseCode = "200", description = "Lista de mesas obtenida correctamente")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<MesaResponseDTO>> obtenerTodas() {
         log.info("GET /api/v1/mesas");
         List<Mesa> mesas = mesaService.obtenerTodos();
@@ -51,10 +52,9 @@ public class MesaController {
 
     @GetMapping("/{id}")
     @Operation(summary = "Obtener una mesa por id")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Mesa encontrada"),
-            @ApiResponse(responseCode = "404", description = "No existe una mesa con ese id")
-    })
+    @ApiResponse(responseCode = "200", description = "Mesa encontrada")
+    @ApiResponse(responseCode = "404", description = "No existe una mesa con ese id")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<MesaResponseDTO> obtenerPorId(@PathVariable Long id) {
         Mesa mesa = mesaService.obtenerPorId(id);
         return ResponseEntity.ok(mesaMapper.toResponse(mesa));
@@ -62,10 +62,9 @@ public class MesaController {
 
     @PostMapping
     @Operation(summary = "Crear una mesa nueva", description = "La mesa se crea libre por defecto.")
-    @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "Mesa creada"),
-            @ApiResponse(responseCode = "400", description = "Datos invalidos")
-    })
+    @ApiResponse(responseCode = "201", description = "Mesa creada")
+    @ApiResponse(responseCode = "400", description = "Datos invalidos")
+    @PreAuthorize("hasAnyRole('GERENTE', 'MESERO')")
     public ResponseEntity<MesaResponseDTO> crear(@RequestBody @Valid MesaRequestDTO dto) {
         log.info("POST /api/v1/mesas - numero={}", dto.getNumero());
         Mesa mesa = mesaMapper.toDomain(dto);
@@ -75,11 +74,10 @@ public class MesaController {
 
     @PutMapping("/{id}")
     @Operation(summary = "Actualizar una mesa existente")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Mesa actualizada"),
-            @ApiResponse(responseCode = "404", description = "No existe una mesa con ese id"),
-            @ApiResponse(responseCode = "400", description = "Datos invalidos")
-    })
+    @ApiResponse(responseCode = "200", description = "Mesa actualizada")
+    @ApiResponse(responseCode = "404", description = "No existe una mesa con ese id")
+    @ApiResponse(responseCode = "400", description = "Datos invalidos")
+    @PreAuthorize("hasAnyRole('GERENTE', 'MESERO')")
     public ResponseEntity<MesaResponseDTO> actualizar(@PathVariable Long id, @RequestBody @Valid MesaRequestDTO dto) {
         Mesa nuevosDatos = mesaMapper.toDomain(dto);
         Mesa actualizada = mesaService.actualizar(id, nuevosDatos);
@@ -88,10 +86,9 @@ public class MesaController {
 
     @PatchMapping("/{id}/estado")
     @Operation(summary = "Cambiar el estado de una mesa", description = "LIBRE, OCUPADA o RESERVADA.")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Estado actualizado"),
-            @ApiResponse(responseCode = "404", description = "No existe una mesa con ese id")
-    })
+    @ApiResponse(responseCode = "200", description = "Estado actualizado")
+    @ApiResponse(responseCode = "404", description = "No existe una mesa con ese id")
+    @PreAuthorize("hasAnyRole('GERENTE', 'MESERO')")
     public ResponseEntity<MesaResponseDTO> cambiarEstado(@PathVariable Long id, @RequestParam EstadoMesa estado) {
         Mesa actualizada = mesaService.cambiarEstado(id, estado);
         return ResponseEntity.ok(mesaMapper.toResponse(actualizada));
@@ -99,10 +96,9 @@ public class MesaController {
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Eliminar una mesa")
-    @ApiResponses({
-            @ApiResponse(responseCode = "204", description = "Mesa eliminada"),
-            @ApiResponse(responseCode = "404", description = "No existe una mesa con ese id")
-    })
+    @ApiResponse(responseCode = "204", description = "Mesa eliminada")
+    @ApiResponse(responseCode = "404", description = "No existe una mesa con ese id")
+    @PreAuthorize("hasRole('GERENTE')")
     public ResponseEntity<Void> eliminar(@PathVariable Long id) {
         mesaService.eliminar(id);
         return ResponseEntity.noContent().build();

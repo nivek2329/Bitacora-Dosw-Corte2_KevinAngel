@@ -1,6 +1,7 @@
 package com.restaurante.model.domain;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -23,6 +24,6 @@ public class RegistroVehiculo {
     }
 
     public void registrarSalida() {
-        this.horaSalida = LocalDateTime.now();
+        this.horaSalida = LocalDateTime.now(ZoneId.of("America/Bogota"));
     }
 }

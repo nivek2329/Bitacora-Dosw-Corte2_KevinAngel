@@ -1,6 +1,7 @@
 package com.restaurante.model.domain;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -21,7 +22,7 @@ public class Reserva {
     private boolean cancelada;
 
     public boolean estaVigente() {
-        return !cancelada && fechaHora != null && fechaHora.isAfter(LocalDateTime.now());
+        return !cancelada && fechaHora != null && fechaHora.isAfter(LocalDateTime.now(ZoneId.of("America/Bogota")));
     }
 
     public void cancelar() {

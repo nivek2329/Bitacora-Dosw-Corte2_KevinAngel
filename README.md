@@ -13,10 +13,11 @@ Ademas del CRUD de platos, se implemento el CRUD completo de los otros 6
 dominios del restaurante (Mesa, Pedido, ItemPedido, Cuenta, Reserva y
 RegistroVehiculo), siguiendo la misma arquitectura por capas.
 
-**Persistencia (en progreso, Semana 9):** ya existen la entidad JPA
-(`persistence/entity/PlatoEntity`) y `PlatoJpaRepository`, listas para
-conectar PostgreSQL. El `PlatoServiceImpl` todavia guarda en memoria
-mientras se avanza con el resto de la clase.
+**Semana 9:** los 7 dominios ya no guardan en memoria, ahora persisten
+en PostgreSQL con JPA/Hibernate. Los cambios de estado de un pedido
+quedan ademas en un historial en MongoDB. Y la API quedo protegida:
+hay que autenticarse con un token JWT para usarla, y crear, editar o
+eliminar esta restringido por rol (GERENTE, MESERO, COCINERO).
 
 ## Funcionalidades
 
@@ -43,6 +44,11 @@ La API agrupa las funcionalidades en los 7 dominios del restaurante:
   cancelacion y reprogramacion.
 - **Parqueadero** (`/api/v1/vehiculos`): registro de entrada y salida de
   vehiculos.
+- **Autenticacion** (`/auth/login`): login con email y password que
+  devuelve un token JWT. El resto de la API (menos el menu publico) pide
+  ese token, y crear/editar/eliminar ademas pide un rol especifico.
+- **Historial de pedido** (`/api/v1/pedidos/{id}/eventos`): cada pedido
+  que se crea o cambia de estado queda registrado en MongoDB.
 - **Manejo de errores uniforme**: cualquier endpoint responde con el mismo
   formato de error (`ErrorResponseDTO`) ante recurso no encontrado,
   datos invalidos o body malformado.
@@ -133,6 +139,44 @@ Dominio de Sushi Craft (7 clases + 3 enums) y sus relaciones:
 | PATCH | `/api/v1/vehiculos/{id}/salida` | Registrar la salida de un vehiculo | 200, 404 |
 | DELETE | `/api/v1/vehiculos/{id}` | Eliminar un registro | 204, 404 |
 
+### Autenticacion
+
+| Metodo | Ruta | Descripcion | Respuestas |
+|---|---|---|---|
+| POST | `/auth/login` | Login con email y password, devuelve un token JWT valido por 24h | 200, 401 |
+
+El token se manda en cada peticion protegida con el header
+`Authorization: Bearer <token>`. Sin token (o con uno invalido) la API
+responde 401. Con token pero sin el rol necesario, responde 403.
+
+Los GET de los 7 dominios solo piden estar autenticado, sin importar el
+rol. Crear, editar y cambiar estado esta permitido para GERENTE y
+MESERO (el cambio de estado de un pedido tambien lo puede hacer
+COCINERO). Eliminar esta reservado para GERENTE, salvo en items de
+pedido donde tambien puede MESERO. El menu publico (`/api/v1/menu`) no
+pide token, para que un cliente pueda verlo sin loguearse.
+
+Usuarios de prueba (se crean solos al arrancar la app la primera vez,
+con `DataSeeder`; password `sushicraft123` para los 4):
+
+| Email | Rol |
+|---|---|
+| gerente@sushicraft.com | GERENTE |
+| mesero@sushicraft.com | MESERO |
+| cocinero@sushicraft.com | COCINERO |
+| cliente@sushicraft.com | CLIENTE |
+
+### Historial de un pedido (MongoDB)
+
+| Metodo | Ruta | Descripcion | Respuestas |
+|---|---|---|---|
+| GET | `/api/v1/pedidos/{idPedido}/eventos` | Ver el historial de eventos de un pedido (creacion, cambios de estado) | 200 |
+
+Cada vez que se crea un pedido o cambia de estado, se guarda un evento
+en una coleccion de MongoDB (`eventos_pedido`), aparte de PostgreSQL. Es
+el unico dato del proyecto que vive en Mongo; el resto sigue en
+PostgreSQL.
+
 ## Como se ejecuta
 
 1. Levanta PostgreSQL local con Docker (una sola vez; si ya existe el
@@ -142,8 +186,15 @@ Dominio de Sushi Craft (7 clases + 3 enums) y sus relaciones:
 docker run --name sushicraft-db -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=sushicraft -p 5432:5432 -d postgres:16
 ```
 
-2. Corre la aplicacion (Hibernate crea la tabla `platos` solo, gracias a
-   `spring.jpa.hibernate.ddl-auto=update` en `application.properties`):
+2. Levanta MongoDB local con Docker (tambien una sola vez):
+
+```
+docker run --name sushicraft-mongo -p 27017:27017 -d mongo:7
+```
+
+3. Corre la aplicacion (Hibernate crea las tablas solo, gracias a
+   `spring.jpa.hibernate.ddl-auto=update`, y al arrancar se crean los 4
+   usuarios de prueba si la tabla todavia esta vacia):
 
 ```
 mvn spring-boot:run
@@ -151,16 +202,24 @@ mvn spring-boot:run
 - API: http://localhost:8080/api/v1/...
 - Swagger UI: http://localhost:8080/swagger-ui/index.html
 
+4. Para probar un endpoint protegido en Swagger: primero hacer POST
+   `/auth/login` con uno de los usuarios de prueba, copiar el `token`
+   de la respuesta, y pegarlo en el boton **Authorize** de Swagger
+   (arriba a la derecha) como `Bearer <token>`.
+
 ## Pruebas y cobertura
 
 ```
 mvn test
 ```
-Corre las 95 pruebas unitarias (mapper + service de cada uno de los 7
-dominios: Plato, Mesa, Pedido, ItemPedido, Cuenta, Reserva y
-RegistroVehiculo) y genera el reporte de cobertura de Jacoco en
-`target/site/jacoco/index.html` (abrelo en el navegador despues de correr
-`mvn test`).
+Los tests de los 7 `ServiceImpl` se reescribieron con Mockito: antes el
+service guardaba todo en un Map en memoria y el test lo usaba
+directamente, ahora el service depende del repositorio JPA (y en
+Pedido/ItemPedido tambien de otros services), asi que hay que simular
+esas dependencias. De paso se agregaron casos que antes no existian,
+como crear un plato con un nombre repetido. Corre `mvn test` para ver
+el numero final de pruebas y el reporte de cobertura de Jacoco en
+`target/site/jacoco/index.html`.
 
 ## Analisis estatico (SonarQube local)
 
@@ -189,23 +248,86 @@ dentro del proyecto.
 
 ### Swagger UI
 
-![Swagger UI](docs/evidencias/swagger-ui.png)
+Los 8 grupos de endpoints (Platos, Menu, Mesas, Pedidos, Items de pedido, Cuentas, Reservas, Parqueadero):
+
+![Swagger UI 1](docs/evidencias/swagger-ui-1.png)
+
+![Swagger UI 2](docs/evidencias/swagger-ui-2.png)
+
+![Swagger UI 3](docs/evidencias/swagger-ui-3.png)
+
+![Swagger UI 4](docs/evidencias/swagger-ui-4.png)
 
 ### Cobertura de pruebas (Jacoco)
 
 ![Cobertura Jacoco](docs/evidencias/jacoco-cobertura.png)
 
-Cobertura total del proyecto: 23% (559/734 instrucciones). El paquete
-`service.impl` (que es el que tiene pruebas unitarias, `PlatoServiceImpl`)
-llega al 98% de cobertura de instrucciones.
+Cobertura total: 66% de instrucciones y 50% de ramas. La mayor parte esta
+en `service.impl` (99%) y `mapper` (93%), que es donde estan los 95 tests
+unitarios. En `controller` y `config` queda en 0% porque solo se hicieron
+pruebas unitarias, no de integracion con MockMvc.
 
 ### Analisis estatico (SonarQube local)
 
-![SonarQube Overview](docs/evidencias/sonar-overview.png)
+En el primer analisis el Quality Gate ya pasaba, pero salieron 37 issues:
+3 de Reliability por usar `LocalDateTime.now()` sin zona horaria
+(`GlobalExceptionHandler`, `RegistroVehiculo` y `Reserva`) y 34 de
+Maintainability por usar `@ApiResponses({...})` como wrapper en los 7
+controladores en vez de poner cada `@ApiResponse` por separado, que es
+lo que pide la regla desde Java 8. Se corrigieron los dos y quedo en 0
+issues.
+
+![SonarQube antes](docs/evidencias/sonar-overview-antes.png)
+
+![Issues antes](docs/evidencias/sonar-issues-antes.png)
+
+![SonarQube despues](docs/evidencias/sonar-overview.png)
+
+![Issues despues](docs/evidencias/sonar-issues-despues.png)
 
 ### Ejecucion
 
 ![Ejecucion de la app](docs/evidencias/ejecucion-consola.png)
+
+### Autenticacion, roles y persistencia (Semana 9)
+
+Se corrio `mvn clean verify` y paso: compilo y los 97 tests (mapper +
+service, estos ultimos reescritos con Mockito) quedaron en verde. Ya con
+la app corriendo, con Postgres y Mongo en Docker, se probo lo siguiente
+desde Swagger:
+
+Login con el usuario de prueba `gerente@sushicraft.com` (devuelve el
+token JWT):
+
+![Login exitoso](docs/evidencias/auth-login-exitoso.png)
+
+Con ese token puesto en el boton Authorize, crear un plato nuevo
+funciona (201):
+
+![Crear plato con token](docs/evidencias/auth-crear-plato-201.png)
+
+Sin token, el mismo tipo de endpoint responde 401 (se ve al abrir la
+ruta directo en el navegador, sin loguearse):
+
+![Sin token - 401](docs/evidencias/auth-sin-token-401.png)
+
+Con token pero con el usuario `cliente@sushicraft.com` (que no tiene
+permiso para crear platos), responde 403:
+
+![Rol sin permiso - 403](docs/evidencias/auth-rol-incorrecto-403.png)
+
+Cada vez que se crea un pedido o le cambian el estado, queda un evento
+guardado en MongoDB. Esto es el `GET /api/v1/pedidos/{id}/eventos`
+despues de crear un pedido y pasarlo a EN_PREPARACION:
+
+![Historial de eventos en Mongo](docs/evidencias/mongo-eventos-pedido.png)
+
+Y para confirmar que ya no se guarda en memoria: se pararon Postgres y
+la app, se volvieron a prender, y los platos creados antes seguian ahi
+(en la imagen, el plato `id=1` sigue con sus mismos datos despues del
+reinicio):
+
+![Persistencia tras reiniciar](docs/evidencias/persistencia-post-reinicio.png)
 
 ### Pruebas por funcionalidad (Postman)
 

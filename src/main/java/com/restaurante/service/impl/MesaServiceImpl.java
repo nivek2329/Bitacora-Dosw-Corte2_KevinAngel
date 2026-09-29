@@ -1,37 +1,39 @@
 package com.restaurante.service.impl;
 
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.springframework.stereotype.Service;
 
 import com.restaurante.exception.RecursoNoEncontradoException;
+import com.restaurante.mapper.MesaEntityMapper;
 import com.restaurante.model.domain.EstadoMesa;
 import com.restaurante.model.domain.Mesa;
+import com.restaurante.persistence.entity.MesaEntity;
+import com.restaurante.persistence.repository.MesaJpaRepository;
 import com.restaurante.service.IMesaService;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Service
+@RequiredArgsConstructor
 @Slf4j
 public class MesaServiceImpl implements IMesaService {
 
-    private final Map<Long, Mesa> mesas = new ConcurrentHashMap<>();
-    private final AtomicLong contador = new AtomicLong(1);
+    private final MesaJpaRepository mesaRepository;
+    private final MesaEntityMapper entityMapper;
 
     @Override
     public List<Mesa> obtenerTodos() {
+        List<MesaEntity> mesas = mesaRepository.findAll();
         log.info("Obteniendo todas las mesas. Total: {}", mesas.size());
-        return mesas.values().stream().toList();
+        return mesas.stream().map(entityMapper::toDomain).toList();
     }
 
     @Override
     public Mesa obtenerPorId(Long id) {
-        return mesas.values().stream()
-                .filter(m -> m.getId().equals(id))
-                .findFirst()
+        return mesaRepository.findById(id)
+                .map(entityMapper::toDomain)
                 .orElseThrow(() -> {
                     log.warn("Mesa no encontrada: id={}", id);
                     return new RecursoNoEncontradoException("Mesa", id);
@@ -40,39 +42,36 @@ public class MesaServiceImpl implements IMesaService {
 
     @Override
     public Mesa crear(Mesa mesa) {
-        mesa.setId(contador.getAndIncrement());
-        mesas.put(mesa.getId(), mesa);
-        log.info("Mesa creada: id={}, numero={}", mesa.getId(), mesa.getNumero());
-        return mesa;
+        MesaEntity guardada = mesaRepository.save(entityMapper.toEntity(mesa));
+        log.info("Mesa creada: id={}, numero={}", guardada.getId(), guardada.getNumero());
+        return entityMapper.toDomain(guardada);
     }
 
     @Override
     public Mesa actualizar(Long id, Mesa nuevosDatos) {
-        Mesa existente = obtenerPorId(id);
+        MesaEntity existente = mesaRepository.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Mesa", id));
         existente.setNumero(nuevosDatos.getNumero());
         existente.setCapacidad(nuevosDatos.getCapacidad());
         log.info("Mesa actualizada: id={}", id);
-        return existente;
+        return entityMapper.toDomain(mesaRepository.save(existente));
     }
 
     @Override
     public Mesa cambiarEstado(Long id, EstadoMesa estado) {
-        Mesa mesa = obtenerPorId(id);
-        if (estado == EstadoMesa.LIBRE) {
-            mesa.liberar();
-        } else if (estado == EstadoMesa.OCUPADA) {
-            mesa.ocupar();
-        } else {
-            mesa.setEstado(estado);
-        }
+        MesaEntity existente = mesaRepository.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Mesa", id));
+        existente.setEstado(estado);
         log.info("Mesa id={} -> estado={}", id, estado);
-        return mesa;
+        return entityMapper.toDomain(mesaRepository.save(existente));
     }
 
     @Override
     public void eliminar(Long id) {
-        obtenerPorId(id);
-        mesas.remove(id);
+        if (!mesaRepository.existsById(id)) {
+            throw new RecursoNoEncontradoException("Mesa", id);
+        }
+        mesaRepository.deleteById(id);
         log.info("Mesa eliminada: id={}", id);
     }
 }

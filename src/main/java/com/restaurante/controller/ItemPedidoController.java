@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -22,7 +23,6 @@ import com.restaurante.service.IItemPedidoService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -41,6 +41,7 @@ public class ItemPedidoController {
     @GetMapping
     @Operation(summary = "Listar todos los items de pedido", description = "Se puede filtrar por pedido con ?idPedido=")
     @ApiResponse(responseCode = "200", description = "Lista de items obtenida correctamente")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<ItemPedidoResponseDTO>> obtenerTodos(@RequestParam(required = false) Long idPedido) {
         log.info("GET /api/v1/items-pedido - idPedido={}", idPedido);
         List<ItemPedido> items = idPedido == null
@@ -51,10 +52,9 @@ public class ItemPedidoController {
 
     @GetMapping("/{id}")
     @Operation(summary = "Obtener un item de pedido por id")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Item encontrado"),
-            @ApiResponse(responseCode = "404", description = "No existe un item con ese id")
-    })
+    @ApiResponse(responseCode = "200", description = "Item encontrado")
+    @ApiResponse(responseCode = "404", description = "No existe un item con ese id")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ItemPedidoResponseDTO> obtenerPorId(@PathVariable Long id) {
         ItemPedido item = itemPedidoService.obtenerPorId(id);
         return ResponseEntity.ok(itemPedidoMapper.toResponse(item));
@@ -62,11 +62,10 @@ public class ItemPedidoController {
 
     @PostMapping
     @Operation(summary = "Agregar un item a un pedido", description = "El nombre y precio del plato se copian ('congelan') al momento de crear el item.")
-    @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "Item creado"),
-            @ApiResponse(responseCode = "400", description = "Datos invalidos"),
-            @ApiResponse(responseCode = "404", description = "No existe el pedido o el plato indicado")
-    })
+    @ApiResponse(responseCode = "201", description = "Item creado")
+    @ApiResponse(responseCode = "400", description = "Datos invalidos")
+    @ApiResponse(responseCode = "404", description = "No existe el pedido o el plato indicado")
+    @PreAuthorize("hasAnyRole('GERENTE', 'MESERO')")
     public ResponseEntity<ItemPedidoResponseDTO> crear(@RequestBody @Valid ItemPedidoRequestDTO dto) {
         log.info("POST /api/v1/items-pedido - idPedido={}, idPlato={}", dto.getIdPedido(), dto.getIdPlato());
         ItemPedido item = itemPedidoMapper.toDomain(dto);
@@ -76,10 +75,9 @@ public class ItemPedidoController {
 
     @PatchMapping("/{id}/cantidad")
     @Operation(summary = "Cambiar la cantidad de un item")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Cantidad actualizada"),
-            @ApiResponse(responseCode = "404", description = "No existe un item con ese id")
-    })
+    @ApiResponse(responseCode = "200", description = "Cantidad actualizada")
+    @ApiResponse(responseCode = "404", description = "No existe un item con ese id")
+    @PreAuthorize("hasAnyRole('GERENTE', 'MESERO')")
     public ResponseEntity<ItemPedidoResponseDTO> actualizarCantidad(@PathVariable Long id, @RequestParam Integer cantidad) {
         ItemPedido actualizado = itemPedidoService.actualizarCantidad(id, cantidad);
         return ResponseEntity.ok(itemPedidoMapper.toResponse(actualizado));
@@ -87,10 +85,9 @@ public class ItemPedidoController {
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Eliminar un item de pedido")
-    @ApiResponses({
-            @ApiResponse(responseCode = "204", description = "Item eliminado"),
-            @ApiResponse(responseCode = "404", description = "No existe un item con ese id")
-    })
+    @ApiResponse(responseCode = "204", description = "Item eliminado")
+    @ApiResponse(responseCode = "404", description = "No existe un item con ese id")
+    @PreAuthorize("hasAnyRole('GERENTE', 'MESERO')")
     public ResponseEntity<Void> eliminar(@PathVariable Long id) {
         itemPedidoService.eliminar(id);
         return ResponseEntity.noContent().build();

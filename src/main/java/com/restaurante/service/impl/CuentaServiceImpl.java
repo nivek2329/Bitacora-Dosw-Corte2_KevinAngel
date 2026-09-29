@@ -1,43 +1,46 @@
 package com.restaurante.service.impl;
 
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.springframework.stereotype.Service;
 
 import com.restaurante.exception.RecursoNoEncontradoException;
+import com.restaurante.mapper.CuentaEntityMapper;
 import com.restaurante.model.domain.Cuenta;
+import com.restaurante.model.domain.EstadoCuenta;
+import com.restaurante.persistence.entity.CuentaEntity;
+import com.restaurante.persistence.repository.CuentaJpaRepository;
 import com.restaurante.service.ICuentaService;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Service
+@RequiredArgsConstructor
 @Slf4j
 public class CuentaServiceImpl implements ICuentaService {
 
-    private final Map<Long, Cuenta> cuentas = new ConcurrentHashMap<>();
-    private final AtomicLong contador = new AtomicLong(1);
+    private final CuentaJpaRepository cuentaRepository;
+    private final CuentaEntityMapper entityMapper;
 
     @Override
     public List<Cuenta> obtenerTodos() {
+        List<CuentaEntity> cuentas = cuentaRepository.findAll();
         log.info("Obteniendo todas las cuentas. Total: {}", cuentas.size());
-        return cuentas.values().stream().toList();
+        return cuentas.stream().map(entityMapper::toDomain).toList();
     }
 
     @Override
     public List<Cuenta> obtenerPorMesa(Long idMesa) {
-        return cuentas.values().stream()
-                .filter(c -> c.getIdMesa().equals(idMesa))
+        return cuentaRepository.findByIdMesa(idMesa).stream()
+                .map(entityMapper::toDomain)
                 .toList();
     }
 
     @Override
     public Cuenta obtenerPorId(Long id) {
-        return cuentas.values().stream()
-                .filter(c -> c.getId().equals(id))
-                .findFirst()
+        return cuentaRepository.findById(id)
+                .map(entityMapper::toDomain)
                 .orElseThrow(() -> {
                     log.warn("Cuenta no encontrada: id={}", id);
                     return new RecursoNoEncontradoException("Cuenta", id);
@@ -46,32 +49,35 @@ public class CuentaServiceImpl implements ICuentaService {
 
     @Override
     public Cuenta crear(Cuenta cuenta) {
-        cuenta.setId(contador.getAndIncrement());
-        cuentas.put(cuenta.getId(), cuenta);
-        log.info("Cuenta creada: id={}, idMesa={}", cuenta.getId(), cuenta.getIdMesa());
-        return cuenta;
+        CuentaEntity guardada = cuentaRepository.save(entityMapper.toEntity(cuenta));
+        log.info("Cuenta creada: id={}, idMesa={}", guardada.getId(), guardada.getIdMesa());
+        return entityMapper.toDomain(guardada);
     }
 
     @Override
     public Cuenta actualizarTotal(Long id, Double total) {
-        Cuenta existente = obtenerPorId(id);
+        CuentaEntity existente = cuentaRepository.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Cuenta", id));
         existente.setTotal(total);
         log.info("Cuenta id={} -> total={}", id, total);
-        return existente;
+        return entityMapper.toDomain(cuentaRepository.save(existente));
     }
 
     @Override
     public Cuenta cerrar(Long id) {
-        Cuenta cuenta = obtenerPorId(id);
-        cuenta.cerrar();
+        CuentaEntity existente = cuentaRepository.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Cuenta", id));
+        existente.setEstado(EstadoCuenta.CERRADA);
         log.info("Cuenta cerrada: id={}", id);
-        return cuenta;
+        return entityMapper.toDomain(cuentaRepository.save(existente));
     }
 
     @Override
     public void eliminar(Long id) {
-        obtenerPorId(id);
-        cuentas.remove(id);
+        if (!cuentaRepository.existsById(id)) {
+            throw new RecursoNoEncontradoException("Cuenta", id);
+        }
+        cuentaRepository.deleteById(id);
         log.info("Cuenta eliminada: id={}", id);
     }
 }
