@@ -2,6 +2,20 @@
 
 **Autor:** Kevin Angel
 
+## Indice
+
+- [Descripcion](#descripcion)
+- [Funcionalidades](#funcionalidades)
+- [Diagramas](#diagramas)
+- [Tabla de endpoints](#tabla-de-endpoints)
+- [Como se ejecuta](#como-se-ejecuta)
+- [Pruebas y cobertura](#pruebas-y-cobertura)
+- [Analisis estatico (SonarQube local)](#analisis-estatico-sonarqube-local)
+- [Seguridad](#seguridad)
+- [Docker](#docker)
+- [CI/CD y Despliegue](#cicd-y-despliegue)
+- [Evidencias](#evidencias)
+
 ## Descripcion
 
 API REST del restaurante **Sushi Craft** (app *Kaze & Nori*), el concepto de
@@ -69,6 +83,11 @@ diagrams.net, con Archivo > Abrir):
   [`docs/diagramas/modelo-relacional-sushicraft.drawio`](docs/diagramas/modelo-relacional-sushicraft.drawio)
 - **Modelo no relacional** (la coleccion `eventos_pedido` de MongoDB):
   [`docs/diagramas/modelo-no-relacional-sushicraft.drawio`](docs/diagramas/modelo-no-relacional-sushicraft.drawio)
+- **Diagrama de componentes especifico** del modulo de Pedidos (Controller,
+  Service, Mapper, Repository y como se conecta a Postgres y a Mongo):
+  [`docs/diagramas/diagrama-componentes-especifico-sushicraft.drawio`](docs/diagramas/diagrama-componentes-especifico-sushicraft.drawio)
+- **Diagrama de componentes general** de toda la API, agrupado por dominio:
+  [`docs/diagramas/diagrama-componentes-general-sushicraft.drawio`](docs/diagramas/diagrama-componentes-general-sushicraft.drawio)
 
 ## Tabla de endpoints
 
@@ -190,6 +209,21 @@ PostgreSQL.
 
 ## Como se ejecuta
 
+### Opcion A: todo con Docker (recomendado, Semana 10)
+
+Levanta la API junto con Postgres y Mongo en un solo paso, sin instalar
+nada mas que Docker. Ver el detalle en la seccion [Docker](#docker).
+
+```
+cp .env.example .env
+# completar JWT_SECRET en .env (por ejemplo con: openssl rand -base64 32)
+docker compose up --build -d
+```
+- API: http://localhost:8080/api/v1/...
+- Swagger UI: http://localhost:8080/swagger-ui/index.html
+
+### Opcion B: manual (Postgres y Mongo en contenedores sueltos, API local)
+
 1. Levanta PostgreSQL local con Docker (una sola vez; si ya existe el
    contenedor, solo hace falta arrancarlo desde Docker Desktop):
 
@@ -213,10 +247,11 @@ mvn spring-boot:run
 - API: http://localhost:8080/api/v1/...
 - Swagger UI: http://localhost:8080/swagger-ui/index.html
 
-4. Para probar un endpoint protegido en Swagger: primero hacer POST
-   `/auth/login` con uno de los usuarios de prueba, copiar el `token`
-   de la respuesta, y pegarlo en el boton **Authorize** de Swagger
-   (arriba a la derecha) como `Bearer <token>`.
+### Probar un endpoint protegido en Swagger
+
+Primero hacer POST `/auth/login` con uno de los usuarios de prueba,
+copiar el `token` de la respuesta, y pegarlo en el boton **Authorize**
+de Swagger (arriba a la derecha) como `Bearer <token>`.
 
 ## Pruebas y cobertura
 
@@ -251,6 +286,152 @@ mvn verify sonar:sonar -Dsonar.token=TU_TOKEN
 (o exporta `SONAR_TOKEN` como variable de entorno en vez de pasarlo por
 linea de comandos). El reporte queda visible en http://localhost:9000
 dentro del proyecto.
+
+## Seguridad
+
+Login, JWT y roles ya estaban implementados desde la Semana 9
+(`SecurityConfig`, `JwtAuthFilter`, `JwtUtil`, `@PreAuthorize` en cada
+controller). Para la Semana 10 se completo lo que faltaba: el boton
+**Authorize** de Swagger (configurado en `OpenApiConfig` con el esquema
+`bearerAuth`) y una prueba de integracion de seguridad en
+`src/test/java/com/restaurante/security/SecurityIntegrationTest.java`
+que levanta la app completa con MockMvc y verifica, contra los
+endpoints reales:
+
+- Sin token -> 401
+- Token invalido -> 401
+- Rol sin permiso (MESERO intentando crear un plato) -> 403
+- Rol correcto (GERENTE) -> 201
+- Login con password incorrecta -> 401
+- Login valido -> 200 con el token
+
+Esta prueba necesita Postgres y Mongo corriendo (usa `docker compose up`,
+ver [Docker](#docker)) porque levanta el contexto completo de Spring.
+
+### OWASP Top 10 - cuales aplican y como se mitigan
+
+| Riesgo | Aplica | Como se mitiga |
+|---|---|---|
+| Broken Access Control | Si | `@PreAuthorize` por rol en cada endpoint de escritura; los GET solo piden estar autenticado |
+| Cryptographic Failures | Si | Password con `BCryptPasswordEncoder`; nunca se devuelve el password en los DTO de respuesta |
+| Injection | Si | Spring Data JPA con queries parametrizadas, no se arma SQL a mano |
+| Insecure Design | Si | Validacion con Bean Validation (`@NotBlank`, `@Positive`, etc.) antes de llegar a la logica de negocio |
+| Security Misconfiguration | Si | CORS explicito (`CorsConfig`), mensajes de error genericos via `GlobalExceptionHandler` (sin stacktrace al cliente) |
+| Vulnerable and Outdated Components | Si | Dependencias manejadas por el BOM de `spring-boot-starter-parent` 3.3.4 |
+| Identification and Authentication Failures | Si | JWT con expiracion de 24h, password hasheado, 401 uniforme ante credenciales invalidas |
+| Software and Data Integrity Failures | Parcial | La imagen Docker se publica firmada por el pipeline de GitHub Actions (ver CI/CD), no hay plugins ni actualizaciones de fuentes externas |
+| Security Logging and Monitoring Failures | Si | `@Slf4j` registra login fallido y accesos denegados en `AuthController` y `GlobalExceptionHandler` |
+| SSRF | No aplica | La API no hace peticiones salientes a URLs que el usuario pueda controlar |
+
+### Evidencia pendiente de agregar
+
+Captura del boton Authorize con el token puesto, captura de los headers
+de seguridad en Postman (`X-Frame-Options`, `X-Content-Type-Options`),
+captura del campo `password` hasheado directo en la base de datos, y el
+resultado de `mvn test` con `SecurityIntegrationTest` en verde. El resto
+(login exitoso, 401, 403) ya esta en la seccion [Evidencias](#evidencias),
+capturado en la Semana 9.
+
+## Docker
+
+La API se empaqueta con un `Dockerfile` de dos etapas (build con Maven,
+runtime en `eclipse-temurin:17-jre-alpine`) y se levanta junto con
+Postgres y Mongo con `docker-compose.yml`.
+
+```
+cp .env.example .env
+# editar .env: como minimo poner un JWT_SECRET propio
+docker compose up --build -d
+```
+
+Esto levanta tres servicios: `sushicraft-postgres`, `sushicraft-mongo` y
+`sushicraft-api` (puertos 5432, 27017 y 8080). La API espera a que
+Postgres y Mongo esten `healthy` antes de arrancar (`depends_on` con
+`condition: service_healthy`).
+
+Comandos utiles:
+
+```
+docker compose ps                 # ver el estado de los 3 servicios
+docker compose logs api           # ver el log de arranque de la API
+docker compose restart api        # reiniciar solo la API
+docker compose down               # apagar todo (los datos quedan en los volumenes)
+```
+
+La imagen tambien se publica en Docker Hub automaticamente desde el
+pipeline de CI/CD (ver la seccion siguiente) cada vez que se hace push a
+`main`.
+
+### Variables de entorno
+
+| Variable | Para que sirve | Valor por defecto |
+|---|---|---|
+| `POSTGRES_DB` | Nombre de la base de datos | `sushicraft` |
+| `POSTGRES_USER` | Usuario de Postgres | `postgres` |
+| `POSTGRES_PASSWORD` | Password de Postgres | `postgres` |
+| `MONGO_DB` | Nombre de la base de Mongo | `sushicraft` |
+| `JWT_SECRET` | Clave para firmar los JWT (Base64, 32+ bytes) | *(sin valor, hay que ponerla)* |
+| `JWT_EXPIRATION` | Tiempo de vida del token en milisegundos | `86400000` (24h) |
+
+### Evidencia pendiente de agregar
+
+Link a la imagen publicada en Docker Hub, captura de `docker compose ps`
+con los 3 servicios healthy, captura de Swagger funcionando desde el
+contenedor, y captura de los logs de arranque de la API conectandose a
+las bases de datos.
+
+## CI/CD y Despliegue
+
+El pipeline esta en `.github/workflows/ci-cd.yml` y corre en GitHub
+Actions cada vez que hay un push o un pull request a `main`:
+
+1. **build-test**: compila y corre `mvn clean verify` (con Postgres y
+   Mongo como service containers de GitHub Actions).
+2. **docker-build-push**: si el paso anterior paso, construye la imagen
+   Docker y la publica en Docker Hub con dos tags (`latest` y el hash
+   del commit).
+3. **deploy-qa**: despliega esa imagen al App Service de Azure de QA.
+4. **deploy-prod**: despliega a PROD, pero solo despues de una
+   **aprobacion manual** (environment `production` de GitHub, que pide
+   un reviewer antes de dejar correr el job).
+
+### Configuracion pendiente en GitHub (una sola vez)
+
+En *Settings > Secrets and variables > Actions*, crear estos secrets
+(nombres exactos, sin subir los valores a ningun lado):
+
+- `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN`
+- `AZURE_WEBAPP_PUBLISH_PROFILE_QA`, `AZURE_WEBAPP_PUBLISH_PROFILE_PROD`
+
+En *Settings > Environments*, crear el environment `production` y
+activarle **Required reviewers** (eso es lo que convierte el deploy a
+PROD en manual). El environment `qa` no necesita reviewers.
+
+### Ambientes
+
+| Ambiente | Que recibe | Cuando |
+|---|---|---|
+| QA | Cada push a `main` que pasa las pruebas | Automatico |
+| PROD | Lo mismo que paso por QA | Solo con aprobacion manual |
+
+- URL QA: `https://restaurante-qa.azurewebsites.net/swagger-ui/index.html`
+- URL PROD: `https://restaurante-prod.azurewebsites.net/swagger-ui/index.html`
+
+### Diagrama de despliegue
+
+Por indicacion de la guia este diagrama se dibuja a mano (no autogenerado),
+en draw.io, con nodos (cubos UML) para Desarrollador, GitHub, GitHub
+Actions, Docker Hub, y los App Service de QA y PROD con su respectiva
+base de datos (Postgres/Mongo) conectada, mostrando las comunicaciones
+(HTTPS, JDBC/Mongo, CI/CD) entre cada nodo.
+
+### Evidencia pendiente de agregar
+
+Captura del pipeline en verde (jobs build-test, docker-build-push,
+deploy-qa y deploy-prod), captura de la aprobacion manual del deploy a
+PROD, captura de la imagen con sus tags en Docker Hub, captura del App
+Service en Azure corriendo el contenedor, y el diagrama de despliegue
+(dibujado a mano) exportado en PNG.
 
 ## Evidencias
 

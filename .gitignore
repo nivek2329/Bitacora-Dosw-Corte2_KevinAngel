@@ -15,3 +15,7 @@ bin/
 Thumbs.db
 
 *.log
+
+# Docker (Semana 10)
+.env
+_stage_tmp/
