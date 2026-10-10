@@ -53,11 +53,22 @@ La API agrupa las funcionalidades en los 7 dominios del restaurante:
   formato de error (`ErrorResponseDTO`) ante recurso no encontrado,
   datos invalidos o body malformado.
 
-## Diagrama de clases
+## Diagramas
 
-Dominio de Sushi Craft (7 clases + 3 enums) y sus relaciones:
-- Archivo editable (abrir en [draw.io](https://app.diagrams.net) / diagrams.net): [`docs/diagramas/diagrama-clases-sushicraft.drawio`](docs/diagramas/diagrama-clases-sushicraft.drawio)
-- Explicacion de las relaciones y respuesta a la diapositiva 9: [`docs/diagramas/diagrama-clases.md`](docs/diagramas/diagrama-clases.md)
+Todos son archivos `.drawio` (se abren en [draw.io](https://app.diagrams.net) /
+diagrams.net, con Archivo > Abrir):
+
+- **Diagrama de contexto (C4 nivel 1)**, actualizado con roles y JWT de la
+  Semana 9: [`docs/diagramas/diagrama-contexto-sushicraft.drawio`](docs/diagramas/diagrama-contexto-sushicraft.drawio)
+- **Diagrama de clases** del dominio (7 clases + 3 enums, sin DTOs ni
+  anotaciones de Spring): [`docs/diagramas/diagrama-clases-sushicraft.drawio`](docs/diagramas/diagrama-clases-sushicraft.drawio)
+  ([explicacion de las relaciones](docs/diagramas/diagrama-clases.md))
+- **Diagrama de secuencia** de "Crear un plato" (happy path + los 4 casos de
+  error: 401, 403, 400, 409): [`docs/diagramas/diagrama-secuencia-crear-plato.drawio`](docs/diagramas/diagrama-secuencia-crear-plato.drawio)
+- **Modelo relacional** (las 8 tablas de PostgreSQL y sus relaciones):
+  [`docs/diagramas/modelo-relacional-sushicraft.drawio`](docs/diagramas/modelo-relacional-sushicraft.drawio)
+- **Modelo no relacional** (la coleccion `eventos_pedido` de MongoDB):
+  [`docs/diagramas/modelo-no-relacional-sushicraft.drawio`](docs/diagramas/modelo-no-relacional-sushicraft.drawio)
 
 ## Tabla de endpoints
 
@@ -243,8 +254,6 @@ dentro del proyecto.
 
 ## Evidencias
 
-> Pega aqui las capturas de pantalla antes de entregar. Guardalas en una
-> carpeta `docs/evidencias/` y enlazalas con `![descripcion](docs/evidencias/archivo.png)`.
 
 ### Swagger UI
 
