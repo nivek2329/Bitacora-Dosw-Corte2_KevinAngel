@@ -88,6 +88,10 @@ diagrams.net, con Archivo > Abrir):
   [`docs/diagramas/diagrama-componentes-especifico-sushicraft.drawio`](docs/diagramas/diagrama-componentes-especifico-sushicraft.drawio)
 - **Diagrama de componentes general** de toda la API, agrupado por dominio:
   [`docs/diagramas/diagrama-componentes-general-sushicraft.drawio`](docs/diagramas/diagrama-componentes-general-sushicraft.drawio)
+- **Diagrama de despliegue**, con los nodos (PC del desarrollador, GitHub,
+  Docker Hub, App Service de QA/PROD y sus bases de datos) y las
+  comunicaciones entre cada uno:
+  [`docs/diagramas/diagrama-despliegue-sushicraft.drawio`](docs/diagramas/diagrama-despliegue-sushicraft.drawio)
 
 ## Tabla de endpoints
 
@@ -409,29 +413,44 @@ PROD en manual). El environment `qa` no necesita reviewers.
 
 ### Ambientes
 
-| Ambiente | Que recibe | Cuando |
-|---|---|---|
-| QA | Cada push a `main` que pasa las pruebas | Automatico |
-| PROD | Lo mismo que paso por QA | Solo con aprobacion manual |
+| Ambiente | Que recibe | Cuando | Base de datos |
+|---|---|---|---|
+| QA | Cada push a `main` que pasa las pruebas | Automatico | Postgres y Cosmos DB (Mongo API) propios de QA, Azure Database for PostgreSQL Flexible Server (B1ms) + Azure Cosmos DB for MongoDB (RU, nivel gratis) |
+| PROD | Lo mismo que paso por QA | Solo con aprobacion manual | Postgres y Cosmos DB (Mongo API) propios de PROD, separados por completo de los de QA |
 
-- URL QA: `https://restaurante-qa.azurewebsites.net/swagger-ui/index.html`
-- URL PROD: `https://restaurante-prod.azurewebsites.net/swagger-ui/index.html`
+- URL QA: `https://restaurante-qa-kevinsg-f8cze3ecckd8cjdx.eastus-01.azurewebsites.net/swagger-ui/index.html`
+- URL PROD: `https://restaurante-prod-kevinsg-amandrh7csf7gfaz.eastus-01.azurewebsites.net/swagger-ui/index.html`
 
 ### Diagrama de despliegue
 
-Por indicacion de la guia este diagrama se dibuja a mano (no autogenerado),
-en draw.io, con nodos (cubos UML) para Desarrollador, GitHub, GitHub
-Actions, Docker Hub, y los App Service de QA y PROD con su respectiva
-base de datos (Postgres/Mongo) conectada, mostrando las comunicaciones
-(HTTPS, JDBC/Mongo, CI/CD) entre cada nodo.
+Dibujado a mano en draw.io (notacion UML: nodos como cubos, artefactos y
+caminos de comunicacion), siguiendo el modulo de diagramacion de la
+Semana 10: [`docs/diagramas/diagrama-despliegue-sushicraft.drawio`](docs/diagramas/diagrama-despliegue-sushicraft.drawio)
 
-### Evidencia pendiente de agregar
+Muestra el flujo completo: PC del desarrollador -> GitHub (repo +
+Actions) -> Docker Hub (imagen) -> Azure App Service QA (despliegue
+automatico) -> aprobacion manual -> Azure App Service PROD; y cada App
+Service conectado a su propia base de datos (Postgres + Cosmos DB Mongo),
+separadas entre QA y PROD.
 
-Captura del pipeline en verde (jobs build-test, docker-build-push,
-deploy-qa y deploy-prod), captura de la aprobacion manual del deploy a
-PROD, captura de la imagen con sus tags en Docker Hub, captura del App
-Service en Azure corriendo el contenedor, y el diagrama de despliegue
-(dibujado a mano) exportado en PNG.
+### Evidencia
+
+Pipeline completo en verde, con la aprobacion manual del deploy a PROD:
+
+![Pipeline CI/CD](docs/evidencias/pipeline-cicd-verde-aprobado.png)
+
+Swagger de QA corriendo en Azure, conectado a su Postgres y Mongo reales:
+
+![Swagger QA en la nube](docs/evidencias/swagger-qa-nube.png)
+
+Swagger de PROD corriendo en Azure, conectado a su Postgres y Mongo
+reales (separados de los de QA):
+
+![Swagger PROD en la nube](docs/evidencias/swagger-prod-nube.png)
+
+Imagen publicada en Docker Hub con sus tags (hash del commit y `latest`):
+
+![Tags en Docker Hub](docs/evidencias/dockerhub-tags.png)
 
 ## Evidencias
 
